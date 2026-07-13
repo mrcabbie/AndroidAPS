@@ -46,6 +46,9 @@ enum class NotificationId(
     // Pump — general
     EXTENDED_BOLUS_DISABLED(IMPORTANT, PUMP),
     PUMP_ERROR(URGENT, PUMP),
+    // A user/remote (non-SMB) bolus failed to deliver — surfaced once, here, from the executor (the entry
+    // dialog is gone by the time the async result arrives). SMB failures stay silent (the loop self-corrects).
+    BOLUS_DELIVERY_FAILED(URGENT, PUMP),
     WRONG_SERIAL_NUMBER(NORMAL, PUMP),
     WRONG_BASAL_STEP(NORMAL, PUMP),
     WRONG_DRIVER(NORMAL, PUMP),
@@ -102,6 +105,8 @@ enum class NotificationId(
 
     // Pump — Dana
     DANA_PUMP_ALARM(URGENT, PUMP),
+    // "Bolus block" enabled in pump settings - blocks all bolus delivery (wrong configuration for AAPS)
+    DANA_BOLUS_BLOCK(URGENT, PUMP),
 
     // Pump — Dana emulator
     PUMP_EMULATOR_DISPLAY(INFO, PUMP),
@@ -133,6 +138,7 @@ enum class NotificationId(
     NS_URGENT_ALARM(URGENT, SYNC),
     NS_MALFUNCTION(IMPORTANT, SYNC),
     NSCLIENT_VERSION_DOES_NOT_MATCH(NORMAL, SYNC),
+    NSCLIENT_PAIRING_ORPHAN(NORMAL, SYNC),
     OPEN_HUMANS_SIGNED_OUT(NORMAL, SYNC),
 
     // Sync — SMS
@@ -165,12 +171,7 @@ enum class NotificationId(
     SCENE_ENDED(INFO, AUTOMATION, allowMultiple = true),
     SCENE_CHAINED(INFO, AUTOMATION, allowMultiple = true),
     SCENE_CHAIN_SKIPPED(NORMAL, AUTOMATION, allowMultiple = true),
-    SCENE_CHAIN_ERROR(IMPORTANT, AUTOMATION, allowMultiple = true),
-
-    // Developer test triggers — used only by the dev (config.isDev()) alarm-test panel, kept
-    // separate from real ids so test buttons can never replace/dismiss a genuine alarm.
-    TEST_ALARM(URGENT, SYSTEM),
-    TEST_NOTIFICATION(IMPORTANT, SYSTEM);
+    SCENE_CHAIN_ERROR(IMPORTANT, AUTOMATION, allowMultiple = true);
 
     companion object {
 

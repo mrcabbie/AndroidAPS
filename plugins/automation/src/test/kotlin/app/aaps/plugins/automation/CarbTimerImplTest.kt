@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -59,26 +60,28 @@ class CarbTimerImplTest : TestBase() {
     private lateinit var dateUtil: DateUtil
     private lateinit var timerUtil: TimerUtil
 
-    private lateinit var automationPlugin: AutomationPlugin
+    private lateinit var automationRuntime: AutomationRuntime
 
     @BeforeEach fun init() {
         whenever(rh.gs(anyInt())).thenReturn("")
         whenever(profileFunction.getUnits()).thenReturn(GlucoseUnit.MGDL)
         dateUtil = DateUtilImpl(context)
-        timerUtil = TimerUtil(context, rh, rxBus)
-        automationPlugin = AutomationPlugin(
+        timerUtil = TimerUtil(context, rh, rxBus, dateUtil)
+        automationRuntime = AutomationRuntime(
             injector, aapsLogger, rh, preferences, context, fabricPrivacy, loop, rxBus, constraintChecker, aapsSchedulers, config, locationServiceHelper, dateUtil, activePlugin, timerUtil, receiverStatusStore, uel, profileRepository, sceneApi
         )
     }
 
     @Test fun doTest() {
-        assertThat(automationPlugin.size()).isEqualTo(0)
-        automationPlugin.scheduleAutomationEventEatReminder()
-        assertThat(automationPlugin.size()).isEqualTo(1)
-        automationPlugin.removeAutomationEventEatReminder()
-        assertThat(automationPlugin.size()).isEqualTo(0)
+        assertThat(automationRuntime.size()).isEqualTo(0)
+        automationRuntime.scheduleAutomationEventEatReminder()
+        assertThat(automationRuntime.size()).isEqualTo(1)
+        automationRuntime.removeAutomationEventEatReminder()
+        assertThat(automationRuntime.size()).isEqualTo(0)
 
-        automationPlugin.scheduleTimeToEatReminder(1)
-        verify(context, times(1)).startActivity(any())
+        automationRuntime.scheduleTimeToEatReminder(1)
+        // Reminder now goes via AlarmManager (background-safe), NOT the Clock app's startActivity (background-blocked).
+        verify(context, never()).startActivity(any())
+        verify(context, times(1)).getSystemService(Context.ALARM_SERVICE)
     }
 }

@@ -100,13 +100,7 @@ fun MaintenanceDialogs(
             onToggleLogEmail = { maintenanceViewModel.toggleLogEmail(it) },
             onToggleLogCloud = { maintenanceViewModel.toggleLogCloud(it) },
             onToggleCsvLocal = { maintenanceViewModel.toggleCsvLocal(it) },
-            onToggleCsvCloud = { maintenanceViewModel.toggleCsvCloud(it) },
-            showDevTools = maintenanceViewModel.isDevMode,
-            onTestInternalAlarm = { maintenanceViewModel.testInternalAlarm() },
-            onTestInternalUrgentAlarm = { maintenanceViewModel.testInternalUrgentAlarm() },
-            onTestFullScreenAlarm = { maintenanceViewModel.testFullScreenAlarm() },
-            onTestImportantNotification = { maintenanceViewModel.testImportantNotification() },
-            onStopTestAlarms = { maintenanceViewModel.stopTestAlarms() }
+            onToggleCsvCloud = { maintenanceViewModel.toggleCsvCloud(it) }
         )
     }
 
@@ -213,9 +207,11 @@ fun MaintenanceDialogs(
         }
 
         is ExportState.AskPassword           -> {
+            val askState = exportState as ExportState.AskPassword
             QueryAnyPasswordDialog(
                 title = stringResource(KeysR.string.master_password),
                 passwordExplanation = stringResource(CoreUiR.string.password_preferences_encrypt_prompt),
+                errorMessage = if (askState.wrongPassword) stringResource(CoreUiR.string.wrongpassword) else null,
                 onConfirm = { password -> maintenanceViewModel.onExportPasswordEntered(password) },
                 onCancel = { maintenanceViewModel.cancelExport() }
             )

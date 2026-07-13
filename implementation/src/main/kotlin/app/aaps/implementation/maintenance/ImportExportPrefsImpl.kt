@@ -55,6 +55,7 @@ import app.aaps.core.interfaces.utils.fabric.FabricPrivacy
 import app.aaps.core.keys.BooleanNonKey
 import app.aaps.core.keys.StringKey
 import app.aaps.core.keys.interfaces.Preferences
+import app.aaps.core.objects.crypto.CryptoUtil
 import app.aaps.core.objects.extensions.asSettingsExport
 import app.aaps.core.objects.workflow.LoggingWorker
 import app.aaps.core.utils.receivers.DataInbox
@@ -109,7 +110,8 @@ class ImportExportPrefsImpl @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     private val cloudStorageManager: CloudStorageManager,
     private val userEntryPresentationHelper: UserEntryPresentationHelper,
-    private val storage: Storage
+    private val storage: Storage,
+    private val cryptoUtil: CryptoUtil
 ) : ImportExportPrefs {
 
     private var pendingExportFile: DocumentFile? = null
@@ -118,6 +120,13 @@ class ImportExportPrefsImpl @Inject constructor(
 
     override fun isMasterPasswordSet(): Boolean =
         !preferences.getIfExists(StringKey.ProtectionMasterPassword).isNullOrEmpty()
+
+    // Settings encryption must use the master password: verify the entered password against the stored
+    // master hash. The Compose export path previously accepted (and cached, for unattended exports) any password.
+    override fun isMasterPasswordCorrect(password: String): Boolean {
+        val masterHash = preferences.getIfExists(StringKey.ProtectionMasterPassword)
+        return !masterHash.isNullOrEmpty() && cryptoUtil.checkPassword(password, masterHash)
+    }
 
     override fun getExportConfig(): ExportConfig {
         val isCloudActive = cloudStorageManager.isCloudStorageActive()
@@ -847,7 +856,7 @@ class ImportExportPrefsImpl @Inject constructor(
                     if (bytes != null) {
                         val content = String(bytes, Charsets.UTF_8)
                         val metadata = encryptedPrefsFormat.loadMetadata(content)
-                        prefsFiles.add(PrefsFile(file.name, content, metadata))
+                        prefsFiles.add(PrefsFile(file.name, content, metadata, id = file.id))
                     }
                 } catch (e: Exception) {
                     aapsLogger.warn(LTag.CORE, "Failed to load cloud file ${file.name}", e)
@@ -855,7 +864,7 @@ class ImportExportPrefsImpl @Inject constructor(
                         val bytes = provider.downloadFile(file.id)
                         if (bytes != null) {
                             val content = String(bytes, Charsets.UTF_8)
-                            prefsFiles.add(PrefsFile(file.name, content, emptyMap()))
+                            prefsFiles.add(PrefsFile(file.name, content, emptyMap(), id = file.id))
                         }
                     } catch (e2: Exception) {
                         aapsLogger.error(LTag.CORE, "Failed to download ${file.name}", e2)

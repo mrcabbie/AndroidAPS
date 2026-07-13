@@ -1,10 +1,17 @@
 package app.aaps.ui.compose.overview
 
+import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
@@ -51,6 +58,7 @@ fun OverviewScreen(
     tempTargetRecordId: Long = 0,
     runningMode: RM.Mode,
     runningModeText: String,
+    runningModeRemaining: String,
     runningModeProgress: Float,
     runningModeRecordId: Long = 0,
     tbrState: TbrState,
@@ -74,6 +82,9 @@ fun OverviewScreen(
     sceneExpired: Boolean = false,
     onEndScene: () -> Unit = {},
     onDismissScene: () -> Unit = {},
+    endSceneEnabled: Boolean = true,
+    // Disables the command chips' click (running mode / profile / temp target) on an unpaired client — same gate as nav/Manage.
+    commandsAllowed: Boolean = true,
     formatDuration: (Long) -> String = { ms -> "${(ms / 60000L).toInt()}m" },
     paddingValues: PaddingValues,
     fabBottomOffset: Dp = 0.dp,
@@ -102,14 +113,16 @@ fun OverviewScreen(
         }
     }
 
-    val runningModeSceneManaged = activeSceneState?.priorState?.sceneRunningModeId
+    val runningModeSceneManaged = activeSceneState?.scopedRecords?.rmId
         ?.let { it == runningModeRecordId && it > 0 } == true
-    val tempTargetSceneManaged = activeSceneState?.priorState?.sceneTtId
+    val tempTargetSceneManaged = activeSceneState?.scopedRecords?.ttId
         ?.let { it == tempTargetRecordId && it > 0 } == true
-    val profileSceneManaged = activeSceneState?.priorState?.scenePsId
+    val profileSceneManaged = activeSceneState?.scopedRecords?.psId
         ?.let { it == profilePsId && it > 0 } == true
 
-    val isTablet = LocalConfiguration.current.smallestScreenWidthDp >= TABLET_MIN_SW_DP
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isTablet = configuration.smallestScreenWidthDp >= TABLET_MIN_SW_DP && isLandscape
 
     Box(modifier = modifier.fillMaxSize()) {
         if (isTablet) {
@@ -125,12 +138,12 @@ fun OverviewScreen(
                 tempTargetSceneManaged = tempTargetSceneManaged,
                 runningMode = runningMode,
                 runningModeText = runningModeText,
+                runningModeRemaining = runningModeRemaining,
                 runningModeProgress = runningModeProgress,
                 runningModeSceneManaged = runningModeSceneManaged,
                 tbrState = tbrState,
                 smbEnabled = smbEnabled,
                 isSimpleMode = isSimpleMode,
-                calcProgress = calcProgress,
                 graphViewModel = graphViewModel,
                 chipsViewModel = chipsViewModel,
                 manageViewModel = manageViewModel,
@@ -144,10 +157,12 @@ fun OverviewScreen(
                 sceneExpired = sceneExpired,
                 onEndScene = onEndScene,
                 onDismissScene = onDismissScene,
+                endSceneEnabled = endSceneEnabled,
+                commandsAllowed = commandsAllowed,
                 formatDuration = formatDuration
             )
         } else BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            if (maxWidth >= SPLIT_LAYOUT_MIN_WIDTH) {
+            if (isLandscape && maxWidth >= SPLIT_LAYOUT_MIN_WIDTH) {
                 OverviewScreenSplit(
                     profileName = profileName,
                     isProfileModified = isProfileModified,
@@ -160,12 +175,12 @@ fun OverviewScreen(
                     tempTargetSceneManaged = tempTargetSceneManaged,
                     runningMode = runningMode,
                     runningModeText = runningModeText,
+                    runningModeRemaining = runningModeRemaining,
                     runningModeProgress = runningModeProgress,
                     runningModeSceneManaged = runningModeSceneManaged,
                     tbrState = tbrState,
                     smbEnabled = smbEnabled,
                     isSimpleMode = isSimpleMode,
-                    calcProgress = calcProgress,
                     graphViewModel = graphViewModel,
                     chipsViewModel = chipsViewModel,
                     manageViewModel = manageViewModel,
@@ -179,6 +194,8 @@ fun OverviewScreen(
                     sceneExpired = sceneExpired,
                     onEndScene = onEndScene,
                     onDismissScene = onDismissScene,
+                    endSceneEnabled = endSceneEnabled,
+                    commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration
                 )
             } else {
@@ -194,12 +211,12 @@ fun OverviewScreen(
                     tempTargetSceneManaged = tempTargetSceneManaged,
                     runningMode = runningMode,
                     runningModeText = runningModeText,
+                    runningModeRemaining = runningModeRemaining,
                     runningModeProgress = runningModeProgress,
                     runningModeSceneManaged = runningModeSceneManaged,
                     tbrState = tbrState,
                     smbEnabled = smbEnabled,
                     isSimpleMode = isSimpleMode,
-                    calcProgress = calcProgress,
                     graphViewModel = graphViewModel,
                     chipsViewModel = chipsViewModel,
                     manageViewModel = manageViewModel,
@@ -213,9 +230,30 @@ fun OverviewScreen(
                     sceneExpired = sceneExpired,
                     onEndScene = onEndScene,
                     onDismissScene = onDismissScene,
+                    endSceneEnabled = endSceneEnabled,
+                    commandsAllowed = commandsAllowed,
                     formatDuration = formatDuration
                 )
             }
+        }
+
+        // Calculation progress (IOB / graph data). Overlaid on top of content so it never reflows
+        // the layout — previously a flow child of the content Column which caused the screen to jump.
+        AnimatedVisibility(
+            visible = calcProgress < 100,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(paddingValues)
+                .fillMaxWidth()
+        ) {
+            LinearProgressIndicator(
+                progress = { calcProgress / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+            )
         }
 
         PumpActivityFab(

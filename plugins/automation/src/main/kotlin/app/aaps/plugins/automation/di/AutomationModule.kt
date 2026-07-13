@@ -1,8 +1,10 @@
 package app.aaps.plugins.automation.di
 
 import app.aaps.core.interfaces.automation.Automation
+import app.aaps.core.interfaces.plugin.PermissionProvider
 import app.aaps.plugins.automation.AutomationEventObject
-import app.aaps.plugins.automation.AutomationPlugin
+import app.aaps.plugins.automation.AutomationRuntime
+import app.aaps.plugins.automation.BtConnectionSource
 import app.aaps.plugins.automation.actions.Action
 import app.aaps.plugins.automation.actions.ActionAlarm
 import app.aaps.plugins.automation.actions.ActionCarePortalEvent
@@ -20,6 +22,7 @@ import app.aaps.plugins.automation.actions.ActionSettingsExport
 import app.aaps.plugins.automation.actions.ActionStartTempTarget
 import app.aaps.plugins.automation.actions.ActionStopProcessing
 import app.aaps.plugins.automation.actions.ActionStopTempTarget
+import app.aaps.plugins.automation.TimerReminderReceiver
 import app.aaps.plugins.automation.services.LocationService
 import app.aaps.plugins.automation.triggers.Trigger
 import app.aaps.plugins.automation.triggers.TriggerAutosensValue
@@ -55,6 +58,7 @@ import dagger.Module
 import dagger.android.ContributesAndroidInjector
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
 
 @Module(
     includes = [
@@ -115,11 +119,16 @@ abstract class AutomationModule {
     @ContributesAndroidInjector abstract fun actionDisableSceneInjector(): ActionDisableScene
     @ContributesAndroidInjector abstract fun actionDummyInjector(): ActionDummy
     @ContributesAndroidInjector abstract fun contributesLocationService(): LocationService
+    @ContributesAndroidInjector abstract fun contributesTimerReminderReceiver(): TimerReminderReceiver
 
     @Module
     @InstallIn(SingletonComponent::class)
     interface Bindings {
 
-        @Binds fun bindAutomation(automationPlugin: AutomationPlugin): Automation
+        @Binds fun bindAutomation(automationRuntime: AutomationRuntime): Automation
+
+        @Binds @IntoSet fun bindAutomationPermissionProvider(automationRuntime: AutomationRuntime): PermissionProvider
+
+        @Binds fun bindBtConnectionSource(automationRuntime: AutomationRuntime): BtConnectionSource
     }
 }
