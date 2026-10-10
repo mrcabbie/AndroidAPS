@@ -6,37 +6,19 @@ on:
       tagName:
         description: 'Select AAPS Version'
         required: true
-        default: '3.4.2.5'
+        default: '4.0.0-beta1'
         type: choice
         options:
-          # ── 3.4.x (JDK 21) ──────────────────────────────
+          - 4.0.0-beta1
+          - 3.4.2.6
           - 3.4.2.5
           - 3.4.2.4
           - 3.4.2.3
           - 3.4.2.2
           - 3.4.2.1
           - 3.4.2.0
-          - 3.4.1.0
-          - 3.4.0.0
-          # ── 3.3.x (JDK 21) ──────────────────────────────
           - 3.3.2.1
-          - 3.3.2.0
-          - 3.3.1.3
-          # ── 3.2.x (JDK 17) ──────────────────────────────
           - 3.2.0.4
-          - 3.2.0.3
-          - 3.2.0.2
-          - 3.2.0.1
-          - 3.2.0.0
-          # ── 3.1.x (JDK 17) ──────────────────────────────
-          - 3.1.0.3
-          - 3.1.0.2
-          - 3.1.0.1
-          - 3.1.0
-          # ── 3.0.x (JDK 11) ──────────────────────────────
-          - 3.0.0.2
-          - 3.0.0.1
-          - 3.0.0
 
       buildVariant:
         description: 'Select Build Variant'
@@ -69,14 +51,12 @@ jobs:
         run: |
           echo "🔍 Checking required secrets..."
           MISSING=0
-
           check_secret() {
             if [ -z "$1" ]; then
               echo "❌ Missing secret: $2"
               MISSING=1
             fi
           }
-
           check_secret "$KEYSTORE_BASE64" "KEYSTORE_BASE64"
           check_secret "$KEYSTORE_PASSWORD" "KEYSTORE_PASSWORD"
           check_secret "$KEY_ALIAS" "KEY_ALIAS"
