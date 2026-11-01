@@ -6,10 +6,12 @@ on:
       tagName:
         description: 'Select AAPS Version'
         required: true
-        default: '4.0.0-beta1'
+        default: '4.0.0'
         type: choice
         options:
-          - 4.0.0-beta1
+          # ── 4.0.x (JDK 21) ──────────────────────────────
+          - 4.0.0
+          # ── 3.4.x (JDK 21) ──────────────────────────────
           - 3.4.2.6
           - 3.4.2.5
           - 3.4.2.4
